@@ -29,7 +29,9 @@ are set).
 
 **Variables:** `DRY_RUN` — `true` (default) prints sample emails without
 sending; set to `false` when ready to go live. Can also be overridden per
-manual run via the "Run workflow" dispatch input.
+manual run via the "Run workflow" dispatch input. The GitHub Pages dashboard
+also supports manual runs from the browser using a PAT with `Contents: write`;
+its mode toggle is tab-local and does not change the repository variable.
 
 ## Local dry run
 

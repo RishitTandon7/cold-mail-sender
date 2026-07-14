@@ -10,6 +10,9 @@ on:
         description: "Dry run (true = print only, don't send)"
         required: false
         default: "true"
+  repository_dispatch:
+    types:
+      - send-emails-now
 
 # Needed so the workflow can commit sent_log.json/stats.json and download release assets
 permissions:
@@ -59,7 +62,7 @@ jobs:
           GOOGLE_API_KEY_14: ${{ secrets.GOOGLE_API_KEY_14 }}
           GOOGLE_API_KEY_15: ${{ secrets.GOOGLE_API_KEY_15 }}
           GOOGLE_API_KEY_16: ${{ secrets.GOOGLE_API_KEY_16 }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || vars.DRY_RUN || 'true' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || github.event.client_payload.dry_run || vars.DRY_RUN || 'true' }}
           DAILY_LIMIT: "40"
           EXCEL_PATH: "kaamkibaatein_HR_Contact_Database.xlsx"
           RESUME_PATH: "Rishit-Tandon_Resume.pdf"

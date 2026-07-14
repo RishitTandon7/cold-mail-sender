@@ -155,7 +155,7 @@
 
   <div class="panel">
     <div class="panel-row">
-      <button class="primary" id="btn-toggle-mode">Toggle dry-run / live</button>
+      <button class="primary" id="btn-toggle-mode">Manual run mode: Dry run</button>
       <button id="btn-run-now">Run workflow now</button>
       <button id="btn-forget-token">Forget token</button>
     </div>
@@ -163,8 +163,9 @@
     <div class="token-note">
       These buttons call the GitHub API directly from your browser and need a
       personal access token (fine-grained, scoped to this repo, with
-      "Actions: read/write" and "Variables: read/write" permissions, or a
-      classic token with <code>repo</code> + <code>workflow</code> scopes).
+      "Contents: write" permission, or a
+      classic token with <code>repo</code> scope). The mode toggle only affects
+      the next manual run from this tab and does not change repository variables.
       You'll be prompted for it the first time — it's kept only in this
       browser tab's session storage, never sent anywhere but api.github.com,
       and is never written into this page's source or any repo file.
@@ -311,16 +312,17 @@ async function load() {
 
 load();
 
-// --- Control panel: toggle DRY_RUN / trigger a run, via GitHub API from the browser ---
+// --- Control panel: choose manual-run mode and trigger a run, via GitHub API from the browser ---
 const REPO = "RishitTandon7/cold-mail-sender";
 const API = `https://api.github.com/repos/${REPO}`;
 const TOKEN_KEY = "cms_gh_token";
+const MANUAL_MODE_KEY = "cms_manual_dry_run";
 
 function getToken(promptIfMissing = true) {
   let t = sessionStorage.getItem(TOKEN_KEY);
   if (!t && promptIfMissing) {
     t = window.prompt(
-      "Paste a GitHub token (repo access, Actions+Variables read/write) to control this workflow.\n" +
+      "Paste a GitHub token (repo access with Contents: write) to control this workflow.\n" +
       "Kept only in this tab's session storage — cleared when you close the tab."
     );
     if (t) sessionStorage.setItem(TOKEN_KEY, t.trim());
@@ -332,6 +334,16 @@ function setPanelStatus(msg, kind = "") {
   const el = document.getElementById("panel-status");
   el.textContent = msg;
   el.className = "panel-status" + (kind ? " " + kind : "");
+}
+
+function getManualDryRun() {
+  return sessionStorage.getItem(MANUAL_MODE_KEY) !== "false";
+}
+
+function setManualDryRun(isDry) {
+  sessionStorage.setItem(MANUAL_MODE_KEY, isDry ? "true" : "false");
+  document.getElementById("btn-toggle-mode").textContent =
+    `Manual run mode: ${isDry ? "Dry run" : "Live"}`;
 }
 
 async function ghFetch(path, options = {}) {
@@ -357,54 +369,44 @@ async function ghFetch(path, options = {}) {
   return res;
 }
 
-async function getCurrentDryRun() {
-  const res = await ghFetch("/actions/variables/DRY_RUN");
-  const data = await res.json();
-  return data.value;
-}
-
-document.getElementById("btn-toggle-mode").addEventListener("click", async () => {
-  const btn = document.getElementById("btn-toggle-mode");
-  btn.disabled = true;
-  try {
-    setPanelStatus("Reading current mode…");
-    const current = await getCurrentDryRun();
-    const isDry = String(current).toLowerCase() !== "false";
-    const next = isDry ? "false" : "true";
-    const confirmMsg = isDry
-      ? "This will flip DRY_RUN to false — the NEXT run will actually send real emails. Continue?"
-      : "This will flip DRY_RUN back to true (safe/dry-run mode). Continue?";
-    if (!window.confirm(confirmMsg)) { setPanelStatus("Cancelled."); return; }
-
-    setPanelStatus("Updating DRY_RUN…");
-    await ghFetch("/actions/variables/DRY_RUN", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "DRY_RUN", value: next }),
-    });
-    setPanelStatus(`DRY_RUN is now "${next}". ${next === "false" ? "Next run will send real emails." : "Safe mode restored."}`, "ok");
-  } catch (e) {
-    setPanelStatus("Error: " + e.message, "err");
-  } finally {
-    btn.disabled = false;
+document.getElementById("btn-toggle-mode").addEventListener("click", () => {
+  const nextIsDry = !getManualDryRun();
+  const confirmMsg = nextIsDry
+    ? "Switch the next manual run in this tab to dry-run mode?"
+    : "Switch the next manual run in this tab to LIVE mode? A live manual run will actually send real emails.";
+  if (!window.confirm(confirmMsg)) {
+    setPanelStatus("Cancelled.");
+    return;
   }
+  setManualDryRun(nextIsDry);
+  setPanelStatus(
+    nextIsDry
+      ? "Manual runs from this tab are now set to dry-run mode."
+      : "Manual runs from this tab are now set to LIVE mode.",
+    "ok"
+  );
 });
 
 document.getElementById("btn-run-now").addEventListener("click", async () => {
   const btn = document.getElementById("btn-run-now");
   btn.disabled = true;
   try {
-    if (!window.confirm("Trigger the send-emails workflow right now (uses current DRY_RUN setting)?")) {
+    const isDry = getManualDryRun();
+    const modeLabel = isDry ? "dry-run" : "LIVE";
+    if (!window.confirm(`Trigger the send-emails workflow right now in ${modeLabel} mode?`)) {
       setPanelStatus("Cancelled.");
       return;
     }
     setPanelStatus("Dispatching workflow run…");
-    await ghFetch("/actions/workflows/send-emails.yml/dispatches", {
+    await ghFetch("/dispatches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: "main" }),
+      body: JSON.stringify({
+        event_type: "send-emails-now",
+        client_payload: { dry_run: isDry ? "true" : "false" }
+      }),
     });
-    setPanelStatus("Workflow dispatched — check the Actions tab; the dashboard will update once it commits.", "ok");
+    setPanelStatus(`Workflow dispatched in ${modeLabel} mode — check the Actions tab; the dashboard will update once it commits.`, "ok");
   } catch (e) {
     setPanelStatus("Error: " + e.message, "err");
   } finally {
@@ -416,6 +418,9 @@ document.getElementById("btn-forget-token").addEventListener("click", () => {
   sessionStorage.removeItem(TOKEN_KEY);
   setPanelStatus("Token forgotten for this tab.");
 });
+
+setManualDryRun(getManualDryRun());
 </script>
 </body>
 </html>
+
