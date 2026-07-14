@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-07-14T07:49:29.605544+00:00",
+  "total_contacts": 1841,
+  "total_sent": 0,
+  "remaining": 1841,
+  "sent_today": 0,
+  "daily_limit": 40,
+  "dry_run": true,
+  "gemini_models": [
+    "gemini-3.5-flash",
+    "gemini-3-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-pro"
+  ],
+  "google_api_key_count": 16,
+  "last_run_result": "dry_run"
+}
