@@ -162,9 +162,9 @@
     <div class="panel-status" id="panel-status"></div>
     <div class="token-note">
       These buttons call the GitHub API directly from your browser and need a
-      personal access token (fine-grained, scoped to this repo, with
-      "Contents: write" permission, or a
-      classic token with <code>repo</code> scope). The mode toggle only affects
+      personal access token. Fine-grained tokens should be scoped to this repo
+      with "Contents: write" and ideally "Actions: write" permissions; classic
+      tokens should have <code>repo</code> scope. The mode toggle only affects
       the next manual run from this tab and does not change repository variables.
       You'll be prompted for it the first time — it's kept only in this
       browser tab's session storage, never sent anywhere but api.github.com,
@@ -322,7 +322,7 @@ function getToken(promptIfMissing = true) {
   let t = sessionStorage.getItem(TOKEN_KEY);
   if (!t && promptIfMissing) {
     t = window.prompt(
-      "Paste a GitHub token (repo access with Contents: write) to control this workflow.\n" +
+      "Paste a GitHub token for this repo (fine-grained: Contents write, ideally Actions write too; or classic repo scope).\n" +
       "Kept only in this tab's session storage — cleared when you close the tab."
     );
     if (t) sessionStorage.setItem(TOKEN_KEY, t.trim());
@@ -369,6 +369,35 @@ async function ghFetch(path, options = {}) {
   return res;
 }
 
+async function dispatchManualRun(isDry) {
+  try {
+    await ghFetch("/dispatches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_type: "send-emails-now",
+        client_payload: { dry_run: isDry ? "true" : "false" }
+      }),
+    });
+    return "repository_dispatch";
+  } catch (e) {
+    const msg = String(e.message || e);
+    if (!msg.includes("GitHub API 404") && !msg.includes("GitHub API 403")) {
+      throw e;
+    }
+  }
+
+  await ghFetch("/actions/workflows/send-emails.yml/dispatches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ref: "main",
+      inputs: { dry_run: isDry ? "true" : "false" }
+    }),
+  });
+  return "workflow_dispatch";
+}
+
 document.getElementById("btn-toggle-mode").addEventListener("click", () => {
   const nextIsDry = !getManualDryRun();
   const confirmMsg = nextIsDry
@@ -398,17 +427,17 @@ document.getElementById("btn-run-now").addEventListener("click", async () => {
       return;
     }
     setPanelStatus("Dispatching workflow run…");
-    await ghFetch("/dispatches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event_type: "send-emails-now",
-        client_payload: { dry_run: isDry ? "true" : "false" }
-      }),
-    });
-    setPanelStatus(`Workflow dispatched in ${modeLabel} mode — check the Actions tab; the dashboard will update once it commits.`, "ok");
+    const method = await dispatchManualRun(isDry);
+    const methodLabel = method === "repository_dispatch" ? "repository dispatch" : "workflow dispatch";
+    setPanelStatus(`Workflow dispatched in ${modeLabel} mode via ${methodLabel} — check the Actions tab; the dashboard will update once it commits.`, "ok");
   } catch (e) {
-    setPanelStatus("Error: " + e.message, "err");
+    const msg = String(e.message || e);
+    const hint = msg.includes("GitHub API 404")
+      ? " Token likely is not scoped to this repo."
+      : msg.includes("GitHub API 403")
+        ? " Token likely lacks the required GitHub permissions for this repo."
+        : "";
+    setPanelStatus("Error: " + msg + hint, "err");
   } finally {
     btn.disabled = false;
   }
@@ -423,4 +452,5 @@ setManualDryRun(getManualDryRun());
 </script>
 </body>
 </html>
+
 
