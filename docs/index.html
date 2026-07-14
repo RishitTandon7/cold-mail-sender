@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cold Mail Sender — Live Status</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b6b70;
+    --border: #e4e4e7;
+    --accent: #2f6fed;
+    --good: #1a8a4a;
+    --warn: #b5820a;
+    --bad: #c23838;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --card: #171a21;
+      --text: #eaeaef;
+      --muted: #9a9aa4;
+      --border: #2a2d36;
+      --accent: #6d9bff;
+      --good: #43c37a;
+      --warn: #e0b23a;
+      --bad: #f06868;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1115; --card: #171a21; --text: #eaeaef; --muted: #9a9aa4;
+    --border: #2a2d36; --accent: #6d9bff; --good: #43c37a; --warn: #e0b23a; --bad: #f06868;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f7f8; --card: #ffffff; --text: #1a1a1a; --muted: #6b6b70;
+    --border: #e4e4e7; --accent: #2f6fed; --good: #1a8a4a; --warn: #b5820a; --bad: #c23838;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tile .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .value { font-size: 1.6rem; font-weight: 600; margin-top: 4px; }
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+  }
+  .badge.dry { background: rgba(181,130,10,0.15); color: var(--warn); }
+  .badge.live { background: rgba(26,138,74,0.15); color: var(--good); }
+  .progress-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .progress-bar-bg {
+    background: var(--border);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .progress-bar-fill {
+    background: var(--accent);
+    height: 100%;
+    transition: width 0.4s ease;
+  }
+  .section-title { font-size: 1rem; font-weight: 600; margin: 32px 0 12px; }
+  .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    max-height: 600px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--card); cursor: pointer; user-select: none; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .empty, .error { color: var(--muted); padding: 24px; text-align: center; }
+  .footer-note { color: var(--muted); font-size: 0.78rem; margin-top: 24px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cold Mail Sender — Live Status</h1>
+  <div class="subtitle" id="subtitle">Loading…</div>
+
+  <div class="grid" id="tiles"></div>
+
+  <div class="progress-wrap">
+    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+      <span>Overall progress</span>
+      <span id="progress-label">—</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-title">Contacted so far</div>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Filter by name, company, or email…">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-key="name">Name</th>
+          <th data-key="title">Title</th>
+          <th data-key="company">Company</th>
+          <th data-key="email">Email</th>
+          <th data-key="sent_at">Sent (UTC)</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div class="empty" id="empty-state" style="display:none;">No contacts emailed yet.</div>
+  </div>
+
+  <div class="footer-note">
+    Auto-generated after each scheduled run. Source: <a href="https://github.com/RishitTandon7/cold-mail-sender" target="_blank" rel="noopener">RishitTandon7/cold-mail-sender</a>.
+  </div>
+</div>
+
+<script>
+const DATA_STATS = "./data/stats.json";
+const DATA_LOG = "./data/sent_log.json";
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toISOString().replace("T", " ").slice(0, 16);
+  } catch { return iso; }
+}
+
+function tile(label, value, extraHtml = "") {
+  return `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div>${extraHtml}</div>`;
+}
+
+let rows = [];
+let sortKey = "sent_at";
+let sortDir = -1;
+
+function renderTable() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  let filtered = rows.filter(r =>
+    !q || [r.name, r.company, r.email, r.title].some(v => (v || "").toLowerCase().includes(q))
+  );
+  filtered.sort((a, b) => {
+    const av = (a[sortKey] || "").toString();
+    const bv = (b[sortKey] || "").toString();
+    return av < bv ? -1 * sortDir : av > bv ? 1 * sortDir : 0;
+  });
+
+  const tbody = document.getElementById("table-body");
+  const empty = document.getElementById("empty-state");
+  if (filtered.length === 0) {
+    tbody.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td>${r.name || ""}</td>
+      <td>${r.title || ""}</td>
+      <td>${r.company || ""}</td>
+      <td>${r.email || ""}</td>
+      <td>${fmtDate(r.sent_at)}</td>
+    </tr>
+  `).join("");
+}
+
+document.querySelectorAll("th[data-key]").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    sortDir = (sortKey === key) ? -sortDir : -1;
+    sortKey = key;
+    renderTable();
+  });
+});
+document.getElementById("search").addEventListener("input", renderTable);
+
+async function load() {
+  try {
+    const [statsRes, logRes] = await Promise.all([
+      fetch(DATA_STATS + "?t=" + Date.now()),
+      fetch(DATA_LOG + "?t=" + Date.now()),
+    ]);
+    const stats = statsRes.ok ? await statsRes.json() : null;
+    const log = logRes.ok ? await logRes.json() : {};
+
+    rows = Object.entries(log).map(([email, v]) => ({ email, ...v }));
+
+    if (stats) {
+      document.getElementById("subtitle").textContent =
+        `Last updated ${fmtDate(stats.generated_at)} UTC — ${stats.dry_run ? "DRY RUN mode (no real sends)" : "LIVE"}`;
+
+      const pct = stats.total_contacts ? Math.round((stats.total_sent / stats.total_contacts) * 100) : 0;
+      document.getElementById("progress-fill").style.width = pct + "%";
+      document.getElementById("progress-label").textContent =
+        `${stats.total_sent} / ${stats.total_contacts} (${pct}%)`;
+
+      document.getElementById("tiles").innerHTML = [
+        tile("Total contacts", stats.total_contacts),
+        tile("Emailed", stats.total_sent),
+        tile("Remaining", stats.remaining),
+        tile("Sent today", stats.sent_today),
+        tile("Daily limit", stats.daily_limit),
+        tile("Model rotation", `${stats.gemini_models.length}×${stats.google_api_key_count}`,
+          `<div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">${stats.gemini_models.length} models × ${stats.google_api_key_count} keys</div>`),
+        tile("Mode", stats.dry_run ? "Dry run" : "Live",
+          `<span class="badge ${stats.dry_run ? "dry" : "live"}">${stats.dry_run ? "no sends" : "sending"}</span>`),
+      ].join("");
+    } else {
+      document.getElementById("subtitle").textContent = "No run data yet — waiting for the first scheduled run.";
+      document.getElementById("tiles").innerHTML = "";
+    }
+
+    renderTable();
+  } catch (e) {
+    document.getElementById("subtitle").textContent = "Could not load status data.";
+    document.getElementById("table-body").innerHTML = "";
+    document.getElementById("empty-state").style.display = "block";
+    document.getElementById("empty-state").textContent = "Error loading data: " + e.message;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

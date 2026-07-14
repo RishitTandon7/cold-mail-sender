@@ -1,0 +1,80 @@
+name: Send HR Emails
+
+on:
+  schedule:
+    # Runs at 09:00 UTC daily = 2:30 PM IST. Adjust the cron to your preferred send time.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (true = print only, don't send)"
+        required: false
+        default: "true"
+
+# Needed so the workflow can commit sent_log.json/stats.json and download release assets
+permissions:
+  contents: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install openpyxl requests
+
+      - name: Download contact database + resume from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download data --repo "${{ github.repository }}" \
+            --pattern "kaamkibaatein_HR_Contact_Database.xlsx" \
+            --pattern "Rishit-Tandon_Resume.pdf" \
+            --clobber
+
+      - name: Send today's batch
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          GOOGLE_API_KEY_1: ${{ secrets.GOOGLE_API_KEY_1 }}
+          GOOGLE_API_KEY_2: ${{ secrets.GOOGLE_API_KEY_2 }}
+          GOOGLE_API_KEY_3: ${{ secrets.GOOGLE_API_KEY_3 }}
+          GOOGLE_API_KEY_4: ${{ secrets.GOOGLE_API_KEY_4 }}
+          GOOGLE_API_KEY_5: ${{ secrets.GOOGLE_API_KEY_5 }}
+          GOOGLE_API_KEY_6: ${{ secrets.GOOGLE_API_KEY_6 }}
+          GOOGLE_API_KEY_7: ${{ secrets.GOOGLE_API_KEY_7 }}
+          GOOGLE_API_KEY_8: ${{ secrets.GOOGLE_API_KEY_8 }}
+          GOOGLE_API_KEY_9: ${{ secrets.GOOGLE_API_KEY_9 }}
+          GOOGLE_API_KEY_10: ${{ secrets.GOOGLE_API_KEY_10 }}
+          GOOGLE_API_KEY_11: ${{ secrets.GOOGLE_API_KEY_11 }}
+          GOOGLE_API_KEY_12: ${{ secrets.GOOGLE_API_KEY_12 }}
+          GOOGLE_API_KEY_13: ${{ secrets.GOOGLE_API_KEY_13 }}
+          GOOGLE_API_KEY_14: ${{ secrets.GOOGLE_API_KEY_14 }}
+          GOOGLE_API_KEY_15: ${{ secrets.GOOGLE_API_KEY_15 }}
+          GOOGLE_API_KEY_16: ${{ secrets.GOOGLE_API_KEY_16 }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || vars.DRY_RUN || 'true' }}
+          DAILY_LIMIT: "40"
+          EXCEL_PATH: "kaamkibaatein_HR_Contact_Database.xlsx"
+          RESUME_PATH: "Rishit-Tandon_Resume.pdf"
+        run: python send_hr_emails.py
+
+      - name: Sync dashboard data
+        run: |
+          mkdir -p docs/data
+          cp sent_log.json docs/data/sent_log.json
+          cp stats.json docs/data/stats.json
+
+      - name: Commit updated logs and dashboard data
+        run: |
+          git config user.name "hr-mail-bot"
+          git config user.email "actions@github.com"
+          git add sent_log.json stats.json docs/data/sent_log.json docs/data/stats.json
+          git diff --staged --quiet || git commit -m "Update send stats [skip ci]"
+          git push

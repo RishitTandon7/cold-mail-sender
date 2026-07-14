@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+# Real contact database + resume are distributed via a GitHub Release asset,
+# not committed to the repo (contains real people's PII).
+kaamkibaatein_HR_Contact_Database*.xlsx
+Rishit-Tandon_Resume.pdf
+
+.claude/
