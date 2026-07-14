@@ -28,7 +28,9 @@ through `GOOGLE_API_KEY_16` (as many as you have — rotation uses whichever
 are set).
 
 **Variables:** `DRY_RUN` — `true` (default) prints sample emails without
-sending; set to `false` when ready to go live. Can also be overridden per
+sending; set to `false` when ready to go live. `CONTACT_CATEGORIES` defaults
+to `MNC / Product & Funded Companies`, which keeps the active send list near
+200 contacts instead of using the full sheet. Can also be overridden per
 manual run via the "Run workflow" dispatch input. The GitHub Pages dashboard
 also supports manual runs from the browser using a PAT with `Contents: write`;
 its mode toggle is tab-local and does not change the repository variable.

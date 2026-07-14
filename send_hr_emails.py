@@ -49,6 +49,7 @@ from openpyxl import load_workbook
 
 EXCEL_PATH = os.getenv("EXCEL_PATH", "kaamkibaatein_HR_Contact_Database.xlsx")
 SHEET_NAME = "HR Contacts"
+DEFAULT_CONTACT_CATEGORIES = "MNC / Product & Funded Companies"
 
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -118,6 +119,15 @@ Student profile:
 - Portfolio: {YOUR_PORTFOLIO}, GitHub: {YOUR_GITHUB}, LinkedIn: {YOUR_LINKEDIN}
 - Open to both internship and full-time roles
 """.strip()
+
+
+def parse_csv_env(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+ALLOWED_CONTACT_CATEGORIES = parse_csv_env(
+    os.getenv("CONTACT_CATEGORIES", DEFAULT_CONTACT_CATEGORIES)
+)
 
 
 def get_next_google_api_key() -> Optional[str]:
@@ -249,14 +259,18 @@ def load_contacts():
     for row in ws.iter_rows(min_row=2, values_only=True):
         name = row[col["Name"]]
         email = row[col["Email"]]
+        category = (row[col["Category"]] or "").strip() if row[col["Category"]] else ""
         if not name or not email:
             continue  # section header / incomplete row
         if has_tier and row[col["Relevance Tier"]] not in ("Strong HR - Priority", "HR-Adjacent - Useful"):
+            continue
+        if ALLOWED_CONTACT_CATEGORIES and category not in ALLOWED_CONTACT_CATEGORIES:
             continue
         contacts.append({
             "name": name,
             "title": row[col["Title"]],
             "company": row[col["Company"]],
+            "category": category,
             "email": email,
         })
     return contacts
@@ -295,6 +309,7 @@ def write_stats(total_contacts: int, sent: dict, run_result: str):
         "sent_today": sent_today,
         "daily_limit": DAILY_LIMIT,
         "dry_run": DRY_RUN,
+        "contact_categories": ALLOWED_CONTACT_CATEGORIES,
         "gemini_models": GEMINI_MODELS,
         "google_api_key_count": len(GOOGLE_API_KEYS),
         "last_run_result": run_result,
