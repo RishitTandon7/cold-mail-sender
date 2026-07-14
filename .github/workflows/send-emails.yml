@@ -2,8 +2,8 @@ name: Send HR Emails
 
 on:
   schedule:
-    # Runs at 09:00 UTC daily = 2:30 PM IST. Adjust the cron to your preferred send time.
-    - cron: "0 9 * * *"
+    # Runs twice daily at 09:00 UTC and 15:00 UTC.
+    - cron: "0 9,15 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -60,7 +60,9 @@ jobs:
           GOOGLE_API_KEY_15: ${{ secrets.GOOGLE_API_KEY_15 }}
           GOOGLE_API_KEY_16: ${{ secrets.GOOGLE_API_KEY_16 }}
           DRY_RUN: ${{ github.event.inputs.dry_run || vars.DRY_RUN || 'true' }}
-          DAILY_LIMIT: "40"
+          BATCH_SIZE: "7"
+          RUNS_PER_DAY: "2"
+          SEND_DELAY_SECONDS: "20"
           EXCEL_PATH: "kaamkibaatein_HR_Contact_Database.xlsx"
           RESUME_PATH: "Rishit-Tandon_Resume.pdf"
         run: python send_hr_emails.py
