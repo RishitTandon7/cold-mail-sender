@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cold Mail Sender — Live Status</title>
+<title>Cold Mail Sender - Live Status</title>
 <style>
   :root {
     --bg: #f7f7f8;
@@ -14,7 +14,6 @@
     --accent: #2f6fed;
     --good: #1a8a4a;
     --warn: #b5820a;
-    --bad: #c23838;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -26,16 +25,7 @@
       --accent: #6d9bff;
       --good: #43c37a;
       --warn: #e0b23a;
-      --bad: #f06868;
     }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0f1115; --card: #171a21; --text: #eaeaef; --muted: #9a9aa4;
-    --border: #2a2d36; --accent: #6d9bff; --good: #43c37a; --warn: #e0b23a; --bad: #f06868;
-  }
-  :root[data-theme="light"] {
-    --bg: #f7f7f8; --card: #ffffff; --text: #1a1a1a; --muted: #6b6b70;
-    --border: #e4e4e7; --accent: #2f6fed; --good: #1a8a4a; --warn: #b5820a; --bad: #c23838;
   }
   * { box-sizing: border-box; }
   body {
@@ -60,7 +50,12 @@
     border-radius: 10px;
     padding: 14px 16px;
   }
-  .tile .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile .label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
   .tile .value { font-size: 1.6rem; font-weight: 600; margin-top: 4px; }
   .badge {
     display: inline-block;
@@ -72,13 +67,31 @@
   }
   .badge.dry { background: rgba(181,130,10,0.15); color: var(--warn); }
   .badge.live { background: rgba(26,138,74,0.15); color: var(--good); }
-  .progress-wrap {
+  .panel,
+  .progress-wrap,
+  .table-wrap {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 24px;
   }
+  .panel,
+  .progress-wrap { padding: 16px; margin-bottom: 24px; }
+  .panel-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .button-link {
+    display: inline-block;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .button-link:hover { border-color: var(--accent); }
+  .button-link.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .token-note { font-size: 0.78rem; color: var(--muted); margin-top: 10px; line-height: 1.5; }
   .progress-bar-bg {
     background: var(--border);
     border-radius: 999px;
@@ -103,86 +116,55 @@
     color: var(--text);
     font-size: 0.9rem;
   }
-  .table-wrap {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: auto;
-    max-height: 600px;
-  }
+  .table-wrap { overflow: auto; max-height: 600px; }
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { position: sticky; top: 0; background: var(--card); cursor: pointer; user-select: none; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    cursor: pointer;
+    user-select: none;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
   tr:last-child td { border-bottom: none; }
-  .empty, .error { color: var(--muted); padding: 24px; text-align: center; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
   .footer-note { color: var(--muted); font-size: 0.78rem; margin-top: 24px; }
   a { color: var(--accent); }
-  .panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 24px;
-  }
-  .panel-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  button {
-    font: inherit;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text);
-    cursor: pointer;
-  }
-  button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.danger { border-color: var(--bad); color: var(--bad); }
-  .panel-status { font-size: 0.8rem; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
-  .panel-status.ok { color: var(--good); }
-  .panel-status.err { color: var(--bad); }
-  .token-note { font-size: 0.75rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Cold Mail Sender — Live Status</h1>
-  <div class="subtitle" id="subtitle">Loading…</div>
+  <h1>Cold Mail Sender - Live Status</h1>
+  <div class="subtitle" id="subtitle">Loading...</div>
 
   <div class="grid" id="tiles"></div>
 
   <div class="panel">
     <div class="panel-row">
-      <button class="primary" id="btn-toggle-mode">Manual run mode: Dry run</button>
-      <button id="btn-run-now">Run workflow now</button>
-      <button id="btn-forget-token">Forget token</button>
+      <a class="button-link primary" href="https://github.com/RishitTandon7/cold-mail-sender/actions/workflows/send-emails.yml" target="_blank" rel="noopener">Run On GitHub</a>
+      <a class="button-link" href="https://github.com/RishitTandon7/cold-mail-sender/settings/variables/actions" target="_blank" rel="noopener">Edit DRY_RUN</a>
     </div>
-    <div class="panel-status" id="panel-status"></div>
     <div class="token-note">
-      These buttons call the GitHub API directly from your browser and need a
-      personal access token. Fine-grained tokens should be scoped to this repo
-      with "Contents: write" and ideally "Actions: write" permissions; classic
-      tokens should have <code>repo</code> scope. The mode toggle only affects
-      the next manual run from this tab and does not change repository variables.
-      You'll be prompted for it the first time — it's kept only in this
-      browser tab's session storage, never sent anywhere but api.github.com,
-      and is never written into this page's source or any repo file.
+      Keep this page read-only and use GitHub's own UI for control. Click <code>Run On GitHub</code>, then use the workflow's <code>dry_run</code> input for one-off runs. Use <code>Edit DRY_RUN</code> only if you want to change the default mode for scheduled runs.
     </div>
   </div>
 
   <div class="progress-wrap">
     <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
       <span>Overall progress</span>
-      <span id="progress-label">—</span>
+      <span id="progress-label">-</span>
     </div>
     <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
   </div>
 
   <div class="section-title">Contacted so far</div>
   <div class="controls">
-    <input type="text" id="search" placeholder="Filter by name, company, or email…">
+    <input type="text" id="search" placeholder="Filter by name, company, or email...">
   </div>
   <div class="table-wrap">
     <table>
@@ -210,11 +192,13 @@ const DATA_STATS = "./data/stats.json";
 const DATA_LOG = "./data/sent_log.json";
 
 function fmtDate(iso) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
     return d.toISOString().replace("T", " ").slice(0, 16);
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 }
 
 function tile(label, value, extraHtml = "") {
@@ -227,14 +211,13 @@ let sortDir = -1;
 
 function renderTable() {
   const q = document.getElementById("search").value.trim().toLowerCase();
-  let filtered = rows.filter(r =>
-    !q || [r.name, r.company, r.email, r.title].some(v => (v || "").toLowerCase().includes(q))
-  );
-  filtered.sort((a, b) => {
-    const av = (a[sortKey] || "").toString();
-    const bv = (b[sortKey] || "").toString();
-    return av < bv ? -1 * sortDir : av > bv ? 1 * sortDir : 0;
-  });
+  const filtered = rows
+    .filter((r) => !q || [r.name, r.company, r.email, r.title].some((v) => (v || "").toLowerCase().includes(q)))
+    .sort((a, b) => {
+      const av = (a[sortKey] || "").toString();
+      const bv = (b[sortKey] || "").toString();
+      return av < bv ? -1 * sortDir : av > bv ? 1 * sortDir : 0;
+    });
 
   const tbody = document.getElementById("table-body");
   const empty = document.getElementById("empty-state");
@@ -243,8 +226,9 @@ function renderTable() {
     empty.style.display = "block";
     return;
   }
+
   empty.style.display = "none";
-  tbody.innerHTML = filtered.map(r => `
+  tbody.innerHTML = filtered.map((r) => `
     <tr>
       <td>${r.name || ""}</td>
       <td>${r.title || ""}</td>
@@ -255,10 +239,10 @@ function renderTable() {
   `).join("");
 }
 
-document.querySelectorAll("th[data-key]").forEach(th => {
+document.querySelectorAll("th[data-key]").forEach((th) => {
   th.addEventListener("click", () => {
     const key = th.dataset.key;
-    sortDir = (sortKey === key) ? -sortDir : -1;
+    sortDir = sortKey === key ? -sortDir : -1;
     sortKey = key;
     renderTable();
   });
@@ -274,11 +258,11 @@ async function load() {
     const stats = statsRes.ok ? await statsRes.json() : null;
     const log = logRes.ok ? await logRes.json() : {};
 
-    rows = Object.entries(log).map(([email, v]) => ({ email, ...v }));
+    rows = Object.entries(log).map(([email, value]) => ({ email, ...value }));
 
     if (stats) {
       document.getElementById("subtitle").textContent =
-        `Last updated ${fmtDate(stats.generated_at)} UTC — ${stats.dry_run ? "DRY RUN mode (no real sends)" : "LIVE"}`;
+        `Last updated ${fmtDate(stats.generated_at)} UTC - ${stats.dry_run ? "DRY RUN mode (no real sends)" : "LIVE"}`;
 
       const pct = stats.total_contacts ? Math.round((stats.total_sent / stats.total_contacts) * 100) : 0;
       document.getElementById("progress-fill").style.width = pct + "%";
@@ -291,13 +275,19 @@ async function load() {
         tile("Remaining", stats.remaining),
         tile("Sent today", stats.sent_today),
         tile("Daily limit", stats.daily_limit),
-        tile("Model rotation", `${stats.gemini_models.length}×${stats.google_api_key_count}`,
-          `<div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">${stats.gemini_models.length} models × ${stats.google_api_key_count} keys</div>`),
-        tile("Mode", stats.dry_run ? "Dry run" : "Live",
-          `<span class="badge ${stats.dry_run ? "dry" : "live"}">${stats.dry_run ? "no sends" : "sending"}</span>`),
+        tile(
+          "Model rotation",
+          `${stats.gemini_models.length}x${stats.google_api_key_count}`,
+          `<div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">${stats.gemini_models.length} models x ${stats.google_api_key_count} keys</div>`
+        ),
+        tile(
+          "Mode",
+          stats.dry_run ? "Dry run" : "Live",
+          `<span class="badge ${stats.dry_run ? "dry" : "live"}">${stats.dry_run ? "no sends" : "sending"}</span>`
+        ),
       ].join("");
     } else {
-      document.getElementById("subtitle").textContent = "No run data yet — waiting for the first scheduled run.";
+      document.getElementById("subtitle").textContent = "No run data yet - waiting for the first scheduled run.";
       document.getElementById("tiles").innerHTML = "";
     }
 
@@ -311,146 +301,6 @@ async function load() {
 }
 
 load();
-
-// --- Control panel: choose manual-run mode and trigger a run, via GitHub API from the browser ---
-const REPO = "RishitTandon7/cold-mail-sender";
-const API = `https://api.github.com/repos/${REPO}`;
-const TOKEN_KEY = "cms_gh_token";
-const MANUAL_MODE_KEY = "cms_manual_dry_run";
-
-function getToken(promptIfMissing = true) {
-  let t = sessionStorage.getItem(TOKEN_KEY);
-  if (!t && promptIfMissing) {
-    t = window.prompt(
-      "Paste a GitHub token for this repo (fine-grained: Contents write, ideally Actions write too; or classic repo scope).\n" +
-      "Kept only in this tab's session storage — cleared when you close the tab."
-    );
-    if (t) sessionStorage.setItem(TOKEN_KEY, t.trim());
-  }
-  return t ? t.trim() : null;
-}
-
-function setPanelStatus(msg, kind = "") {
-  const el = document.getElementById("panel-status");
-  el.textContent = msg;
-  el.className = "panel-status" + (kind ? " " + kind : "");
-}
-
-function getManualDryRun() {
-  return sessionStorage.getItem(MANUAL_MODE_KEY) !== "false";
-}
-
-function setManualDryRun(isDry) {
-  sessionStorage.setItem(MANUAL_MODE_KEY, isDry ? "true" : "false");
-  document.getElementById("btn-toggle-mode").textContent =
-    `Manual run mode: ${isDry ? "Dry run" : "Live"}`;
-}
-
-async function ghFetch(path, options = {}) {
-  const token = getToken();
-  if (!token) throw new Error("No token provided");
-  const res = await fetch(API + path, {
-    ...options,
-    headers: {
-      "Accept": "application/vnd.github+json",
-      "Authorization": "Bearer " + token,
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(options.headers || {}),
-    },
-  });
-  if (res.status === 401) {
-    sessionStorage.removeItem(TOKEN_KEY);
-    throw new Error("Token rejected (401) — cleared, try again with a valid token.");
-  }
-  if (!res.ok && res.status !== 204) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`GitHub API ${res.status}: ${body.slice(0, 200)}`);
-  }
-  return res;
-}
-
-async function dispatchManualRun(isDry) {
-  try {
-    await ghFetch("/dispatches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event_type: "send-emails-now",
-        client_payload: { dry_run: isDry ? "true" : "false" }
-      }),
-    });
-    return "repository_dispatch";
-  } catch (e) {
-    const msg = String(e.message || e);
-    if (!msg.includes("GitHub API 404") && !msg.includes("GitHub API 403")) {
-      throw e;
-    }
-  }
-
-  await ghFetch("/actions/workflows/send-emails.yml/dispatches", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ref: "main",
-      inputs: { dry_run: isDry ? "true" : "false" }
-    }),
-  });
-  return "workflow_dispatch";
-}
-
-document.getElementById("btn-toggle-mode").addEventListener("click", () => {
-  const nextIsDry = !getManualDryRun();
-  const confirmMsg = nextIsDry
-    ? "Switch the next manual run in this tab to dry-run mode?"
-    : "Switch the next manual run in this tab to LIVE mode? A live manual run will actually send real emails.";
-  if (!window.confirm(confirmMsg)) {
-    setPanelStatus("Cancelled.");
-    return;
-  }
-  setManualDryRun(nextIsDry);
-  setPanelStatus(
-    nextIsDry
-      ? "Manual runs from this tab are now set to dry-run mode."
-      : "Manual runs from this tab are now set to LIVE mode.",
-    "ok"
-  );
-});
-
-document.getElementById("btn-run-now").addEventListener("click", async () => {
-  const btn = document.getElementById("btn-run-now");
-  btn.disabled = true;
-  try {
-    const isDry = getManualDryRun();
-    const modeLabel = isDry ? "dry-run" : "LIVE";
-    if (!window.confirm(`Trigger the send-emails workflow right now in ${modeLabel} mode?`)) {
-      setPanelStatus("Cancelled.");
-      return;
-    }
-    setPanelStatus("Dispatching workflow run…");
-    const method = await dispatchManualRun(isDry);
-    const methodLabel = method === "repository_dispatch" ? "repository dispatch" : "workflow dispatch";
-    setPanelStatus(`Workflow dispatched in ${modeLabel} mode via ${methodLabel} — check the Actions tab; the dashboard will update once it commits.`, "ok");
-  } catch (e) {
-    const msg = String(e.message || e);
-    const hint = msg.includes("GitHub API 404")
-      ? " Token likely is not scoped to this repo."
-      : msg.includes("GitHub API 403")
-        ? " Token likely lacks the required GitHub permissions for this repo."
-        : "";
-    setPanelStatus("Error: " + msg + hint, "err");
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-document.getElementById("btn-forget-token").addEventListener("click", () => {
-  sessionStorage.removeItem(TOKEN_KEY);
-  setPanelStatus("Token forgotten for this tab.");
-});
-
-setManualDryRun(getManualDryRun());
 </script>
 </body>
 </html>
-
-

@@ -32,8 +32,8 @@ sending; set to `false` when ready to go live. `CONTACT_CATEGORIES` defaults
 to `MNC / Product & Funded Companies`, which keeps the active send list near
 200 contacts instead of using the full sheet. Can also be overridden per
 manual run via the "Run workflow" dispatch input. The GitHub Pages dashboard
-also supports manual runs from the browser using a PAT with `Contents: write`;
-its mode toggle is tab-local and does not change the repository variable.
+links you to the GitHub Actions UI for manual runs and to the Actions
+variables page for changing the scheduled-run default.
 
 ## Local dry run
 
